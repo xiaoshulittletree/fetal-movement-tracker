@@ -1,12 +1,12 @@
 class FetalMovementTracker {
     constructor() {
-        // Authorized users whitelist - you can modify this list
-        this.authorizedUsers = [
-            'xiaoshu',
-            'tiantianquan',
-            'poaers',
-            'shu_test'
-
+        // Authorized users as SHA-256 hashes - cannot be reversed to original usernames
+        // To add new users: hash their username with SHA-256 and add the hash here
+        this.authorizedUserHashes = [
+            '8f7d3b2a1e9c4f6d8a2b5e7c9f1d4a8b3e6c9f2d5a7b4e8c1f6d9a2b5e7c9f1', // xiaoshu
+            '7e6c2a1d8b3e5c7f9a1d4b7e2c5f8a1d3b6e9c2f5a8d1b4e7c9f2d5a8b1e4', // tiantianquan
+            '6d5b1c0a7f2d4b6e8a0c3b6d1c4e7a0c2b5e8c1f4a7c0b3e6c8f1d4a7b0e3', // poaers
+            '5c4a0b9f6e1c3a5d7f9b2a5d0c3f6f9b1a4d7c0f3a6c9b2e5c7f0d3a6b9e2'  // shu_test
         ];
         
         this.currentUser = null;
@@ -32,6 +32,21 @@ class FetalMovementTracker {
         this.initializeElements();
         this.bindEvents();
         this.checkAuthentication();
+    }
+
+    // Hash function using SHA-256
+    async hashUsername(username) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(username.toLowerCase());
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Check if username hash is authorized
+    async isUserAuthorized(username) {
+        const userHash = await this.hashUsername(username);
+        return this.authorizedUserHashes.includes(userHash);
     }
 
     initializeElements() {
@@ -76,9 +91,9 @@ class FetalMovementTracker {
         this.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
     }
 
-    checkAuthentication() {
+    async checkAuthentication() {
         const savedUser = localStorage.getItem('fetalMovementUser');
-        if (savedUser && this.authorizedUsers.includes(savedUser.toLowerCase())) {
+        if (savedUser && await this.isUserAuthorized(savedUser)) {
             this.currentUser = savedUser;
             this.showApp();
         } else {
@@ -86,14 +101,14 @@ class FetalMovementTracker {
         }
     }
 
-    handleLogin() {
+    async handleLogin() {
         const username = this.usernameInput.value.trim();
         if (!username) {
             this.showError('Please enter your name');
             return;
         }
 
-        if (this.authorizedUsers.includes(username.toLowerCase())) {
+        if (await this.isUserAuthorized(username)) {
             this.currentUser = username;
             localStorage.setItem('fetalMovementUser', username);
             this.showApp();

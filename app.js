@@ -282,9 +282,8 @@ class FetalMovementTracker {
                 this.completeSession();
             }
         } else {
-            // Total episodes reached 3, but continue recording until time expires
-            // The timer will continue running and call this function again when time is up
-            this.statusElement.textContent = `Sufficient total episodes recorded (${totalEpisodes}) - Continue recording until time expires!`;
+            // Total episodes reached 3, complete the session
+            this.completeSession();
         }
     }
 

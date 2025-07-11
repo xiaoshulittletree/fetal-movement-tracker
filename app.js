@@ -25,8 +25,6 @@ class FetalMovementTracker {
         this.checkAuthentication();
     }
 
-
-
     initializeElements() {
         // Login elements
         this.loginScreen = document.getElementById('loginScreen');
@@ -47,6 +45,17 @@ class FetalMovementTracker {
         this.historyList = document.getElementById('historyList');
         this.exportCsvBtn = document.getElementById('exportCsv');
         this.exportJsonBtn = document.getElementById('exportJson');
+        
+        // Check if all required elements are found
+        if (!this.movementCountElement) {
+            console.error('movementCount element not found in DOM');
+        }
+        if (!this.timerElement) {
+            console.error('timer element not found in DOM');
+        }
+        if (!this.statusElement) {
+            console.error('status element not found in DOM');
+        }
     }
 
     bindEvents() {
@@ -195,6 +204,11 @@ class FetalMovementTracker {
                         this.updateMovementCount();
                         this.startTimer();
                         
+                        // Force update movement count display after recovery
+                        setTimeout(() => {
+                            this.updateMovementCount();
+                        }, 100);
+                        
                         // Show recovery message with more prominence
                         this.statusElement.textContent = '✅ Session recovered - Continue recording!';
                         this.statusElement.style.color = '#4682B4';
@@ -277,6 +291,7 @@ class FetalMovementTracker {
         // Check if this movement should start a new episode or be part of existing one
         this.updateMovementEpisodes(movement);
         
+        console.log('Recording movement, updating count...');
         this.updateMovementCount();
         this.updateSessionInfo();
         this.saveSessionState();
@@ -436,7 +451,11 @@ class FetalMovementTracker {
         const totalEpisodes = this.movementEpisodes.length;
         const phaseEpisodes = this.movementEpisodes.filter(e => e.phase === this.currentPhase).length;
         
-        this.movementCountElement.textContent = `Movements: ${totalMovements} | Episodes: ${totalEpisodes} (${phaseEpisodes} in current phase)`;
+        if (this.movementCountElement) {
+            this.movementCountElement.textContent = `Movements: ${totalMovements} | Episodes: ${totalEpisodes} (${phaseEpisodes} in current phase)`;
+        } else {
+            console.warn('movementCountElement not found');
+        }
     }
 
     updateSessionInfo() {

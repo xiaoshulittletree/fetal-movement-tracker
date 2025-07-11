@@ -63,8 +63,7 @@ class FetalMovementTracker {
         this.timerElement = document.getElementById('timer');
         this.statusElement = document.getElementById('status');
         this.movementCountElement = document.getElementById('movementCount');
-        this.startBtn = document.getElementById('startBtn');
-        this.recordBtn = document.getElementById('recordBtn');
+        this.startRecordBtn = document.getElementById('startRecordBtn');
         this.stopBtn = document.getElementById('stopBtn');
         this.sessionInfo = document.getElementById('sessionInfo');
         this.sessionDetails = document.getElementById('sessionDetails');
@@ -84,9 +83,8 @@ class FetalMovementTracker {
         });
         
         // App events
-        this.startBtn.addEventListener('click', () => this.startSession());
-        this.recordBtn.addEventListener('click', () => this.recordMovement());
-        this.stopBtn.addEventListener('click', () => this.stopSession());
+        this.startRecordBtn.addEventListener('click', () => this.handleStartRecord());
+        this.stopBtn.addEventListener('click', () => this.handleStopSession());
         this.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         this.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
     }
@@ -147,6 +145,22 @@ class FetalMovementTracker {
         this.errorMessage.style.display = 'none';
     }
 
+    handleStartRecord() {
+        if (!this.isRunning) {
+            // Start the session
+            this.startSession();
+        } else {
+            // Record a movement
+            this.recordMovement();
+        }
+    }
+
+    handleStopSession() {
+        if (confirm('Are you sure you want to stop this session? This action cannot be undone.')) {
+            this.stopSession();
+        }
+    }
+
     startSession() {
         this.isRunning = true;
         this.sessionStartTime = new Date();
@@ -154,8 +168,8 @@ class FetalMovementTracker {
         this.movementEpisodes = [];
         this.currentPhase = 'initial';
         
-        this.startBtn.disabled = true;
-        this.recordBtn.disabled = false;
+        this.startRecordBtn.textContent = 'Record Movement';
+        this.startRecordBtn.disabled = false;
         this.stopBtn.disabled = false;
         
         this.statusElement.textContent = 'Session started - Record movements!';
@@ -226,8 +240,8 @@ class FetalMovementTracker {
         this.isRunning = false;
         clearInterval(this.timerInterval);
         
-        this.startBtn.disabled = false;
-        this.recordBtn.disabled = true;
+        this.startRecordBtn.textContent = 'Start Session & Record Movement';
+        this.startRecordBtn.disabled = false;
         this.stopBtn.disabled = true;
         
         this.statusElement.textContent = 'Session completed';
@@ -306,8 +320,8 @@ class FetalMovementTracker {
         this.loadHistory();
         
         // Reset UI state
-        this.startBtn.disabled = false;
-        this.recordBtn.disabled = true;
+        this.startRecordBtn.textContent = 'Start Session & Record Movement';
+        this.startRecordBtn.disabled = false;
         this.stopBtn.disabled = true;
         this.sessionInfo.style.display = 'none';
     }

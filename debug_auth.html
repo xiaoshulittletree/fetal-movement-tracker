@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Debug</title>
+</head>
+<body>
+    <h1>Authentication Debug</h1>
+    <input type="text" id="username" placeholder="Enter username">
+    <button onclick="testAuth()">Test Authentication</button>
+    <div id="result"></div>
+
+    <script>
+        // Copy the exact same logic from your app.js
+        const authorizedUserHashes = [
+            'a184675d2ff83f0e0eb1e59d2e732abe124c0ee86e9a8a08befd074bca7dcef7', // xiaoshu
+            'cb6c4241a545821f65426c55dcafba973e62f3e8048d055602e7c78ac3e4d665', // tiantianquan
+            '2100434549267ea853c6e23e048899fc2b9a9eae90c7d961feaf839a6d60e769', // poaers
+            '0a66bb1294be56bfbf38fff7a60b120af8f6864307f32e405d66bc1b9a35f328'  // shu_test
+        ];
+
+        async function hashUsername(username) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(username.toLowerCase());
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function isUserAuthorized(username) {
+            const userHash = await hashUsername(username);
+            return authorizedUserHashes.includes(userHash);
+        }
+
+        async function testAuth() {
+            const username = document.getElementById('username').value;
+            const hash = await hashUsername(username);
+            const isAuthorized = await isUserAuthorized(username);
+            
+            document.getElementById('result').innerHTML = `
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Generated Hash:</strong> ${hash}</p>
+                <p><strong>Is in authorized list:</strong> ${authorizedUserHashes.includes(hash)}</p>
+                <p><strong>Authorized:</strong> ${isAuthorized}</p>
+                <hr>
+                <p><strong>Authorized hashes in list:</strong></p>
+                <ul>
+                    ${authorizedUserHashes.map((hash, index) => 
+                        `<li>${hash} (user ${index + 1})</li>`
+                    ).join('')}
+                </ul>
+            `;
+        }
+    </script>
+</body>
+</html> 

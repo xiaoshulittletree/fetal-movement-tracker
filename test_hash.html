@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hash Test</title>
+</head>
+<body>
+    <h1>Hash Test</h1>
+    <input type="text" id="username" placeholder="Enter username">
+    <button onclick="testHash()">Generate Hash</button>
+    <div id="result"></div>
+
+    <script>
+        async function hashUsername(username) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(username.toLowerCase());
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function testHash() {
+            const username = document.getElementById('username').value;
+            const hash = await hashUsername(username);
+            document.getElementById('result').innerHTML = `
+                <p><strong>Username:</strong> ${username}</p>
+                <p><strong>Hash:</strong> ${hash}</p>
+                <p><strong>Lowercase:</strong> ${username.toLowerCase()}</p>
+            `;
+        }
+    </script>
+</body>
+</html> 

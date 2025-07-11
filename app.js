@@ -108,12 +108,20 @@ class FetalMovementTracker {
             return;
         }
 
+        console.log('Attempting login for username:', username);
+        const userHash = await this.hashUsername(username);
+        console.log('Generated hash:', userHash);
+        console.log('Authorized hashes:', this.authorizedUserHashes);
+        console.log('Hash in list:', this.authorizedUserHashes.includes(userHash));
+
         if (await this.isUserAuthorized(username)) {
+            console.log('Login successful');
             this.currentUser = username;
             localStorage.setItem('fetalMovementUser', username);
             this.showApp();
             this.loadHistory();
         } else {
+            console.log('Login failed');
             this.showError('Sorry, this name is not authorized to use this app.');
         }
     }

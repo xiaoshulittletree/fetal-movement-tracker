@@ -1,0 +1,297 @@
+class FetalMovementTracker {
+    constructor() {
+        this.isRunning = false;
+        this.movements = [];
+        this.sessionStartTime = null;
+        this.timerInterval = null;
+        this.currentPhase = 'initial'; // initial, extended1, extended2
+        this.phaseDurations = {
+            initial: 20 * 60, // 20 minutes
+            extended1: 40 * 60, // 40 minutes
+            extended2: 60 * 60  // 60 minutes
+        };
+        this.phaseNames = {
+            initial: 'Initial 20min',
+            extended1: 'Extended to 40min',
+            extended2: 'Extended to 60min'
+        };
+        this.minMovements = 3;
+        
+        this.initializeElements();
+        this.bindEvents();
+        this.loadHistory();
+    }
+
+    initializeElements() {
+        this.timerElement = document.getElementById('timer');
+        this.statusElement = document.getElementById('status');
+        this.movementCountElement = document.getElementById('movementCount');
+        this.startBtn = document.getElementById('startBtn');
+        this.recordBtn = document.getElementById('recordBtn');
+        this.stopBtn = document.getElementById('stopBtn');
+        this.sessionInfo = document.getElementById('sessionInfo');
+        this.sessionDetails = document.getElementById('sessionDetails');
+        this.historyList = document.getElementById('historyList');
+        this.exportCsvBtn = document.getElementById('exportCsv');
+        this.exportJsonBtn = document.getElementById('exportJson');
+    }
+
+    bindEvents() {
+        this.startBtn.addEventListener('click', () => this.startSession());
+        this.recordBtn.addEventListener('click', () => this.recordMovement());
+        this.stopBtn.addEventListener('click', () => this.stopSession());
+        this.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
+        this.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
+    }
+
+    startSession() {
+        this.isRunning = true;
+        this.sessionStartTime = new Date();
+        this.movements = [];
+        this.currentPhase = 'initial';
+        
+        this.startBtn.disabled = true;
+        this.recordBtn.disabled = false;
+        this.stopBtn.disabled = false;
+        
+        this.statusElement.textContent = 'Session started - Record movements!';
+        this.sessionInfo.style.display = 'block';
+        this.updateSessionInfo();
+        
+        this.startTimer();
+    }
+
+    recordMovement() {
+        if (!this.isRunning) return;
+        
+        const movement = {
+            timestamp: new Date(),
+            phase: this.currentPhase,
+            timeFromStart: Math.floor((new Date() - this.sessionStartTime) / 1000)
+        };
+        
+        this.movements.push(movement);
+        this.updateMovementCount();
+        this.updateSessionInfo();
+        
+        // Visual feedback
+        this.recordBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            this.recordBtn.style.transform = 'scale(1)';
+        }, 100);
+    }
+
+    stopSession() {
+        this.isRunning = false;
+        clearInterval(this.timerInterval);
+        
+        this.startBtn.disabled = false;
+        this.recordBtn.disabled = true;
+        this.stopBtn.disabled = true;
+        
+        this.statusElement.textContent = 'Session completed';
+        this.sessionInfo.style.display = 'none';
+        
+        this.saveSession();
+        this.loadHistory();
+    }
+
+    startTimer() {
+        const startTime = Date.now();
+        const initialDuration = this.phaseDurations.initial;
+        
+        this.timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = Math.max(0, initialDuration - elapsed);
+            
+            this.updateTimer(remaining);
+            
+            // Check if we need to extend the session
+            if (remaining === 0) {
+                this.checkAndExtendSession();
+            }
+        }, 1000);
+    }
+
+    checkAndExtendSession() {
+        const currentMovements = this.movements.filter(m => m.phase === this.currentPhase).length;
+        
+        if (currentMovements < this.minMovements) {
+            if (this.currentPhase === 'initial') {
+                this.extendSession('extended1');
+            } else if (this.currentPhase === 'extended1') {
+                this.extendSession('extended2');
+            } else {
+                // Session completed at 60 minutes
+                this.completeSession();
+            }
+        } else {
+            // Enough movements, complete session
+            this.completeSession();
+        }
+    }
+
+    extendSession(newPhase) {
+        this.currentPhase = newPhase;
+        const phaseDuration = this.phaseDurations[newPhase];
+        const startTime = this.sessionStartTime.getTime();
+        
+        clearInterval(this.timerInterval);
+        
+        this.timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = Math.max(0, phaseDuration - elapsed);
+            
+            this.updateTimer(remaining);
+            this.updateSessionInfo();
+            
+            if (remaining === 0) {
+                this.checkAndExtendSession();
+            }
+        }, 1000);
+        
+        this.statusElement.textContent = `Extended to ${this.phaseNames[newPhase]} - Continue recording!`;
+    }
+
+    completeSession() {
+        clearInterval(this.timerInterval);
+        this.statusElement.textContent = 'Session completed - Sufficient movements recorded';
+        this.updateTimer(0);
+    }
+
+    updateTimer(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        this.timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    updateMovementCount() {
+        const totalMovements = this.movements.length;
+        const phaseMovements = this.movements.filter(m => m.phase === this.currentPhase).length;
+        this.movementCountElement.textContent = `Movements: ${totalMovements} (${phaseMovements} in current phase)`;
+    }
+
+    updateSessionInfo() {
+        if (!this.sessionStartTime) return;
+        
+        const elapsed = Math.floor((Date.now() - this.sessionStartTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        
+        const totalMovements = this.movements.length;
+        const phaseMovements = this.movements.filter(m => m.phase === this.currentPhase).length;
+        
+        this.sessionDetails.innerHTML = `
+            <strong>Duration:</strong> ${minutes}:${seconds.toString().padStart(2, '0')}<br>
+            <strong>Current Phase:</strong> ${this.phaseNames[this.currentPhase]}<br>
+            <strong>Total Movements:</strong> ${totalMovements}<br>
+            <strong>Movements in Current Phase:</strong> ${phaseMovements}<br>
+            <strong>Started:</strong> ${this.sessionStartTime.toLocaleString()}
+        `;
+    }
+
+    saveSession() {
+        const session = {
+            id: Date.now(),
+            startTime: this.sessionStartTime.toISOString(),
+            endTime: new Date().toISOString(),
+            movements: this.movements,
+            totalMovements: this.movements.length,
+            finalPhase: this.currentPhase,
+            duration: Math.floor((new Date() - this.sessionStartTime) / 1000)
+        };
+        
+        const history = this.getHistory();
+        history.unshift(session);
+        
+        // Keep only last 50 sessions
+        if (history.length > 50) {
+            history.splice(50);
+        }
+        
+        localStorage.setItem('fetalMovementHistory', JSON.stringify(history));
+    }
+
+    getHistory() {
+        const history = localStorage.getItem('fetalMovementHistory');
+        return history ? JSON.parse(history) : [];
+    }
+
+    loadHistory() {
+        const history = this.getHistory();
+        this.historyList.innerHTML = '';
+        
+        history.slice(0, 10).forEach(session => {
+            const sessionElement = document.createElement('div');
+            sessionElement.className = 'history-item';
+            
+            const startTime = new Date(session.startTime);
+            const duration = Math.floor(session.duration / 60);
+            
+            sessionElement.innerHTML = `
+                <h4>Session ${new Date(session.startTime).toLocaleDateString()}</h4>
+                <p>Movements: ${session.totalMovements} | Duration: ${duration}min | Phase: ${this.phaseNames[session.finalPhase]}</p>
+                <p>Time: ${startTime.toLocaleTimeString()}</p>
+            `;
+            
+            this.historyList.appendChild(sessionElement);
+        });
+    }
+
+    exportToCSV() {
+        const history = this.getHistory();
+        if (history.length === 0) {
+            alert('No data to export');
+            return;
+        }
+        
+        let csv = 'Session ID,Start Time,End Time,Duration (seconds),Total Movements,Final Phase\n';
+        
+        history.forEach(session => {
+            csv += `${session.id},${session.startTime},${session.endTime},${session.duration},${session.totalMovements},${session.finalPhase}\n`;
+        });
+        
+        this.downloadFile(csv, 'fetal_movements.csv', 'text/csv');
+    }
+
+    exportToJSON() {
+        const history = this.getHistory();
+        if (history.length === 0) {
+            alert('No data to export');
+            return;
+        }
+        
+        const jsonData = JSON.stringify(history, null, 2);
+        this.downloadFile(jsonData, 'fetal_movements.json', 'application/json');
+    }
+
+    downloadFile(content, filename, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+}
+
+// Initialize the app when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new FetalMovementTracker();
+});
+
+// Register service worker for PWA functionality
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+            .then(registration => {
+                console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    });
+} 

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetal Movement Tracker</title>
+    <meta name="description" content="Track fetal movements with adaptive timing">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <meta name="theme-color" content="#4f46e5">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 30px 20px;
+        }
+
+        .timer-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #4f46e5;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .movement-count {
+            font-size: 18px;
+            color: #4f46e5;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 10px 5px;
+            min-width: 120px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button.secondary {
+            background: #f3f4f6;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
+        }
+
+        .button.secondary:hover {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .button.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .session-info {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .session-info h3 {
+            color: #4f46e5;
+            margin-bottom: 10px;
+        }
+
+        .session-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .export-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .history-section {
+            margin-top: 30px;
+        }
+
+        .history-item {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .history-item h4 {
+            color: #4f46e5;
+            margin-bottom: 5px;
+        }
+
+        .history-item p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .alert {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .main-content {
+                padding: 20px 15px;
+            }
+            
+            .timer {
+                font-size: 36px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .button {
+                width: 100%;
+                max-width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👶 Fetal Movement Tracker</h1>
+            <p>Track your baby's movements with adaptive timing</p>
+        </div>
+
+        <div class="main-content">
+            <div class="timer-section">
+                <div class="timer" id="timer">20:00</div>
+                <div class="status" id="status">Ready to start</div>
+                <div class="movement-count" id="movementCount">Movements: 0</div>
+            </div>
+
+            <div class="controls">
+                <button class="button" id="startBtn">Start Session</button>
+                <button class="button secondary" id="recordBtn" disabled>Record Movement</button>
+                <button class="button danger" id="stopBtn" disabled>Stop Session</button>
+            </div>
+
+            <div class="session-info" id="sessionInfo" style="display: none;">
+                <h3>Current Session</h3>
+                <p id="sessionDetails"></p>
+            </div>
+
+            <div class="export-section">
+                <h3>Export Data</h3>
+                <div class="export-buttons">
+                    <button class="button secondary" id="exportCsv">Export CSV</button>
+                    <button class="button secondary" id="exportJson">Export JSON</button>
+                </div>
+            </div>
+
+            <div class="history-section">
+                <h3>Recent Sessions</h3>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

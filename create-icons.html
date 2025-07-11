@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Icons</title>
+</head>
+<body>
+    <h1>Icon Generator</h1>
+    <p>This will generate placeholder icons for the PWA. Right-click and save each canvas as PNG.</p>
+    
+    <h2>192x192 Icon</h2>
+    <canvas id="icon192" width="192" height="192"></canvas>
+    
+    <h2>512x512 Icon</h2>
+    <canvas id="icon512" width="512" height="512"></canvas>
+    
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#4f46e5');
+            gradient.addColorStop(1, '#7c3aed');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Baby icon
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.4}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('👶', size/2, size/2);
+            
+            // Border
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = size * 0.02;
+            ctx.strokeRect(size * 0.1, size * 0.1, size * 0.8, size * 0.8);
+        }
+        
+        drawIcon('icon192', 192);
+        drawIcon('icon512', 512);
+    </script>
+</body>
+</html> 

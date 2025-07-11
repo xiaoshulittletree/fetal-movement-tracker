@@ -64,6 +64,27 @@ class FetalMovementTracker {
         this.stopBtn.addEventListener('click', () => this.handleStopSession());
         this.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         this.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
+        
+        // iOS Safari specific: Save state when page becomes hidden
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && this.isRunning) {
+                this.saveSessionState();
+            }
+        });
+        
+        // iOS Safari specific: Save state before page unload
+        window.addEventListener('beforeunload', () => {
+            if (this.isRunning) {
+                this.saveSessionState();
+            }
+        });
+        
+        // iOS Safari specific: Handle page focus to check for recovery
+        window.addEventListener('focus', () => {
+            if (this.isRunning) {
+                this.saveSessionState();
+            }
+        });
     }
 
     checkAuthentication() {
@@ -73,6 +94,29 @@ class FetalMovementTracker {
             this.showApp();
         } else {
             this.showLogin();
+        }
+        
+        // iOS Safari: Check for session recovery on page load
+        this.checkForSessionRecovery();
+    }
+
+    checkForSessionRecovery() {
+        // Check if there's a saved session state that might need recovery
+        const savedState = localStorage.getItem('fetalMovementSessionState');
+        if (savedState) {
+            try {
+                const state = JSON.parse(savedState);
+                if (state.isRunning && state.user === this.currentUser) {
+                    // If we have a running session but the app isn't running, 
+                    // it might have been interrupted
+                    if (!this.isRunning) {
+                        console.log('Detected interrupted session, attempting recovery...');
+                        this.loadSessionState();
+                    }
+                }
+            } catch (error) {
+                console.warn('Error checking for session recovery:', error);
+            }
         }
     }
 
@@ -116,38 +160,62 @@ class FetalMovementTracker {
                 movements: this.movements,
                 movementEpisodes: this.movementEpisodes,
                 currentPhase: this.currentPhase,
-                user: this.currentUser
+                user: this.currentUser,
+                lastSaved: new Date().toISOString()
             };
-            localStorage.setItem('fetalMovementSessionState', JSON.stringify(sessionState));
+            
+            try {
+                localStorage.setItem('fetalMovementSessionState', JSON.stringify(sessionState));
+            } catch (error) {
+                console.warn('Failed to save session state:', error);
+            }
         }
     }
 
     loadSessionState() {
-        const savedState = localStorage.getItem('fetalMovementSessionState');
-        if (savedState) {
-            const state = JSON.parse(savedState);
-            
-            // Only restore if it's for the current user
-            if (state.user === this.currentUser) {
-                this.isRunning = state.isRunning;
-                this.sessionStartTime = new Date(state.sessionStartTime);
-                this.movements = state.movements;
-                this.movementEpisodes = state.movementEpisodes;
-                this.currentPhase = state.currentPhase;
+        try {
+            const savedState = localStorage.getItem('fetalMovementSessionState');
+            if (savedState) {
+                const state = JSON.parse(savedState);
                 
-                if (this.isRunning) {
-                    this.startRecordBtn.textContent = 'Record Movement';
-                    this.startRecordBtn.disabled = false;
-                    this.stopBtn.disabled = false;
-                    this.sessionInfo.style.display = 'block';
-                    this.updateSessionInfo();
-                    this.updateMovementCount();
-                    this.startTimer();
+                // Only restore if it's for the current user
+                if (state.user === this.currentUser) {
+                    this.isRunning = state.isRunning;
+                    this.sessionStartTime = new Date(state.sessionStartTime);
+                    this.movements = state.movements || [];
+                    this.movementEpisodes = state.movementEpisodes || [];
+                    this.currentPhase = state.currentPhase || 'initial';
                     
-                    // Show recovery message
-                    this.statusElement.textContent = 'Session recovered - Continue recording!';
+                    if (this.isRunning) {
+                        this.startRecordBtn.textContent = 'Record Movement';
+                        this.startRecordBtn.disabled = false;
+                        this.stopBtn.disabled = false;
+                        this.sessionInfo.style.display = 'block';
+                        this.updateSessionInfo();
+                        this.updateMovementCount();
+                        this.startTimer();
+                        
+                        // Show recovery message with more prominence
+                        this.statusElement.textContent = '✅ Session recovered - Continue recording!';
+                        this.statusElement.style.color = '#4682B4';
+                        this.statusElement.style.fontWeight = 'bold';
+                        
+                        // Clear the recovery message after 5 seconds
+                        setTimeout(() => {
+                            this.statusElement.textContent = 'Session active - Record movements!';
+                            this.statusElement.style.color = '#666';
+                            this.statusElement.style.fontWeight = 'normal';
+                        }, 5000);
+                        
+                        // Save state again to ensure it's current
+                        this.saveSessionState();
+                    }
                 }
             }
+        } catch (error) {
+            console.warn('Failed to load session state:', error);
+            // Clear corrupted state
+            this.clearSessionState();
         }
     }
 
@@ -185,6 +253,9 @@ class FetalMovementTracker {
         this.statusElement.textContent = 'Session started - Record movements!';
         this.sessionInfo.style.display = 'block';
         this.updateSessionInfo();
+        
+        // Clear the movement count display when starting a new session
+        this.movementCountElement.textContent = 'Movements: 0 | Episodes: 0 (0 in current phase)';
         
         this.startTimer();
         this.saveSessionState();
@@ -251,6 +322,7 @@ class FetalMovementTracker {
     stopSession() {
         this.isRunning = false;
         clearInterval(this.timerInterval);
+        clearInterval(this.stateSaveInterval);
         
         this.startRecordBtn.textContent = 'Start Session & Record Movement';
         this.startRecordBtn.disabled = false;
@@ -268,6 +340,11 @@ class FetalMovementTracker {
         const startTime = this.sessionStartTime.getTime();
         const phaseDuration = this.phaseDurations[this.currentPhase];
         
+        // Clear any existing timer
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+        
         this.timerInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             const remaining = Math.max(0, phaseDuration - elapsed);
@@ -279,6 +356,13 @@ class FetalMovementTracker {
                 this.checkAndExtendSession();
             }
         }, 1000);
+        
+        // iOS Safari: Also save state periodically
+        this.stateSaveInterval = setInterval(() => {
+            if (this.isRunning) {
+                this.saveSessionState();
+            }
+        }, 5000); // Save every 5 seconds
     }
 
     checkAndExtendSession() {
@@ -320,10 +404,12 @@ class FetalMovementTracker {
         }, 1000);
         
         this.statusElement.textContent = `Extended to ${this.phaseNames[newPhase]} - Continue recording!`;
+        this.saveSessionState();
     }
 
     completeSession() {
         clearInterval(this.timerInterval);
+        clearInterval(this.stateSaveInterval);
         this.statusElement.textContent = 'Session completed - Sufficient movements recorded';
         this.updateTimer(0);
         

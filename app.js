@@ -3,10 +3,10 @@ class FetalMovementTracker {
         // Authorized users as SHA-256 hashes - cannot be reversed to original usernames
         // To add new users: hash their username with SHA-256 and add the hash here
         this.authorizedUserHashes = [
-            '8f7d3b2a1e9c4f6d8a2b5e7c9f1d4a8b3e6c9f2d5a7b4e8c1f6d9a2b5e7c9f1', // xiaoshu
-            '7e6c2a1d8b3e5c7f9a1d4b7e2c5f8a1d3b6e9c2f5a8d1b4e7c9f2d5a8b1e4', // tiantianquan
-            '6d5b1c0a7f2d4b6e8a0c3b6d1c4e7a0c2b5e8c1f4a7c0b3e6c8f1d4a7b0e3', // poaers
-            '5c4a0b9f6e1c3a5d7f9b2a5d0c3f6f9b1a4d7c0f3a6c9b2e5c7f0d3a6b9e2'  // shu_test
+            'a184675d2ff83f0e0eb1e59d2e732abe124c0ee86e9a8a08befd074bca7dcef7', // xiaoshu
+            'cb6c4241a545821f65426c55dcafba973e62f3e8048d055602e7c78ac3e4d665', // tiantianquan
+            '2100434549267ea853c6e23e048899fc2b9a9eae90c7d961feaf839a6d60e769', // poaers
+            '0a66bb1294be56bfbf38fff7a60b120af8f6864307f32e405d66bc1b9a35f328'  // shu_test
         ];
         
         this.currentUser = null;

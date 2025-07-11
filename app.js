@@ -423,6 +423,7 @@ class FetalMovementTracker {
     }
 
     completeSession() {
+        this.isRunning = false;
         clearInterval(this.timerInterval);
         clearInterval(this.stateSaveInterval);
         this.statusElement.textContent = 'Session completed - Sufficient movements recorded';

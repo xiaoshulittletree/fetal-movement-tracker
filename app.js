@@ -255,10 +255,10 @@ class FetalMovementTracker {
     }
 
     checkAndExtendSession() {
-        // Count episodes in current phase, not total movements
-        const currentEpisodes = this.movementEpisodes.filter(e => e.phase === this.currentPhase).length;
+        // Count total episodes across all phases
+        const totalEpisodes = this.movementEpisodes.length;
         
-        if (currentEpisodes < this.minMovements) {
+        if (totalEpisodes < this.minMovements) {
             if (this.currentPhase === 'initial') {
                 this.extendSession('extended1');
             } else if (this.currentPhase === 'extended1') {
@@ -268,8 +268,9 @@ class FetalMovementTracker {
                 this.completeSession();
             }
         } else {
-            // Enough episodes, complete session
-            this.completeSession();
+            // Total episodes reached 3, but continue recording until time expires
+            // The timer will continue running and call this function again when time is up
+            this.statusElement.textContent = `Sufficient total episodes recorded (${totalEpisodes}) - Continue recording until time expires!`;
         }
     }
 
@@ -299,6 +300,16 @@ class FetalMovementTracker {
         clearInterval(this.timerInterval);
         this.statusElement.textContent = 'Session completed - Sufficient movements recorded';
         this.updateTimer(0);
+        
+        // Automatically save the session and update history
+        this.saveSession();
+        this.loadHistory();
+        
+        // Reset UI state
+        this.startBtn.disabled = false;
+        this.recordBtn.disabled = true;
+        this.stopBtn.disabled = true;
+        this.sessionInfo.style.display = 'none';
     }
 
     updateTimer(seconds) {

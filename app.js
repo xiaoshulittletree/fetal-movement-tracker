@@ -105,6 +105,54 @@ class FetalMovementTracker {
         this.loginScreen.style.display = 'none';
         this.appScreen.style.display = 'block';
         this.userDisplayName.textContent = this.currentUser;
+        this.loadSessionState();
+    }
+
+    saveSessionState() {
+        if (this.isRunning) {
+            const sessionState = {
+                isRunning: this.isRunning,
+                sessionStartTime: this.sessionStartTime.toISOString(),
+                movements: this.movements,
+                movementEpisodes: this.movementEpisodes,
+                currentPhase: this.currentPhase,
+                user: this.currentUser
+            };
+            localStorage.setItem('fetalMovementSessionState', JSON.stringify(sessionState));
+        }
+    }
+
+    loadSessionState() {
+        const savedState = localStorage.getItem('fetalMovementSessionState');
+        if (savedState) {
+            const state = JSON.parse(savedState);
+            
+            // Only restore if it's for the current user
+            if (state.user === this.currentUser) {
+                this.isRunning = state.isRunning;
+                this.sessionStartTime = new Date(state.sessionStartTime);
+                this.movements = state.movements;
+                this.movementEpisodes = state.movementEpisodes;
+                this.currentPhase = state.currentPhase;
+                
+                if (this.isRunning) {
+                    this.startRecordBtn.textContent = 'Record Movement';
+                    this.startRecordBtn.disabled = false;
+                    this.stopBtn.disabled = false;
+                    this.sessionInfo.style.display = 'block';
+                    this.updateSessionInfo();
+                    this.updateMovementCount();
+                    this.startTimer();
+                    
+                    // Show recovery message
+                    this.statusElement.textContent = 'Session recovered - Continue recording!';
+                }
+            }
+        }
+    }
+
+    clearSessionState() {
+        localStorage.removeItem('fetalMovementSessionState');
     }
 
     handleStartRecord() {
@@ -139,6 +187,7 @@ class FetalMovementTracker {
         this.updateSessionInfo();
         
         this.startTimer();
+        this.saveSessionState();
     }
 
     recordMovement() {
@@ -159,11 +208,12 @@ class FetalMovementTracker {
         
         this.updateMovementCount();
         this.updateSessionInfo();
+        this.saveSessionState();
         
         // Visual feedback
-        this.recordBtn.style.transform = 'scale(0.95)';
+        this.startRecordBtn.style.transform = 'scale(0.95)';
         setTimeout(() => {
-            this.recordBtn.style.transform = 'scale(1)';
+            this.startRecordBtn.style.transform = 'scale(1)';
         }, 100);
     }
 
@@ -211,15 +261,16 @@ class FetalMovementTracker {
         
         this.saveSession();
         this.loadHistory();
+        this.clearSessionState();
     }
 
     startTimer() {
-        const startTime = Date.now();
-        const initialDuration = this.phaseDurations.initial;
+        const startTime = this.sessionStartTime.getTime();
+        const phaseDuration = this.phaseDurations[this.currentPhase];
         
         this.timerInterval = setInterval(() => {
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
-            const remaining = Math.max(0, initialDuration - elapsed);
+            const remaining = Math.max(0, phaseDuration - elapsed);
             
             this.updateTimer(remaining);
             
@@ -285,6 +336,7 @@ class FetalMovementTracker {
         this.startRecordBtn.disabled = false;
         this.stopBtn.disabled = true;
         this.sessionInfo.style.display = 'none';
+        this.clearSessionState();
     }
 
     updateTimer(seconds) {

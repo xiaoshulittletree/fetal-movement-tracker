@@ -1,5 +1,15 @@
 class FetalMovementTracker {
     constructor() {
+        // Authorized users whitelist - you can modify this list
+        this.authorizedUsers = [
+            'xiaoshu',
+            'tiantianquan',
+            'poaers',
+            'shu_test'
+
+        ];
+        
+        this.currentUser = null;
         this.isRunning = false;
         this.movements = [];
         this.movementEpisodes = []; // Track individual movement episodes
@@ -21,10 +31,20 @@ class FetalMovementTracker {
         
         this.initializeElements();
         this.bindEvents();
-        this.loadHistory();
+        this.checkAuthentication();
     }
 
     initializeElements() {
+        // Login elements
+        this.loginScreen = document.getElementById('loginScreen');
+        this.appScreen = document.getElementById('appScreen');
+        this.usernameInput = document.getElementById('username');
+        this.loginBtn = document.getElementById('loginBtn');
+        this.logoutBtn = document.getElementById('logoutBtn');
+        this.errorMessage = document.getElementById('errorMessage');
+        this.userDisplayName = document.getElementById('userDisplayName');
+        
+        // App elements
         this.timerElement = document.getElementById('timer');
         this.statusElement = document.getElementById('status');
         this.movementCountElement = document.getElementById('movementCount');
@@ -39,11 +59,77 @@ class FetalMovementTracker {
     }
 
     bindEvents() {
+        // Login events
+        this.loginBtn.addEventListener('click', () => this.handleLogin());
+        this.logoutBtn.addEventListener('click', () => this.handleLogout());
+        this.usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.handleLogin();
+            }
+        });
+        
+        // App events
         this.startBtn.addEventListener('click', () => this.startSession());
         this.recordBtn.addEventListener('click', () => this.recordMovement());
         this.stopBtn.addEventListener('click', () => this.stopSession());
         this.exportCsvBtn.addEventListener('click', () => this.exportToCSV());
         this.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
+    }
+
+    checkAuthentication() {
+        const savedUser = localStorage.getItem('fetalMovementUser');
+        if (savedUser && this.authorizedUsers.includes(savedUser.toLowerCase())) {
+            this.currentUser = savedUser;
+            this.showApp();
+        } else {
+            this.showLogin();
+        }
+    }
+
+    handleLogin() {
+        const username = this.usernameInput.value.trim();
+        if (!username) {
+            this.showError('Please enter your name');
+            return;
+        }
+
+        if (this.authorizedUsers.includes(username.toLowerCase())) {
+            this.currentUser = username;
+            localStorage.setItem('fetalMovementUser', username);
+            this.showApp();
+            this.loadHistory();
+        } else {
+            this.showError('Sorry, this name is not authorized to use this app.');
+        }
+    }
+
+    handleLogout() {
+        this.currentUser = null;
+        localStorage.removeItem('fetalMovementUser');
+        this.showLogin();
+        this.usernameInput.value = '';
+    }
+
+    showLogin() {
+        this.loginScreen.style.display = 'block';
+        this.appScreen.style.display = 'none';
+        this.hideError();
+    }
+
+    showApp() {
+        this.loginScreen.style.display = 'none';
+        this.appScreen.style.display = 'block';
+        this.userDisplayName.textContent = this.currentUser;
+        this.hideError();
+    }
+
+    showError(message) {
+        this.errorMessage.textContent = message;
+        this.errorMessage.style.display = 'block';
+    }
+
+    hideError() {
+        this.errorMessage.style.display = 'none';
     }
 
     startSession() {
@@ -71,7 +157,8 @@ class FetalMovementTracker {
         const movement = {
             timestamp: currentTime,
             phase: this.currentPhase,
-            timeFromStart: Math.floor((currentTime - this.sessionStartTime) / 1000)
+            timeFromStart: Math.floor((currentTime - this.sessionStartTime) / 1000),
+            user: this.currentUser
         };
         
         this.movements.push(movement);
@@ -237,6 +324,7 @@ class FetalMovementTracker {
     saveSession() {
         const session = {
             id: Date.now(),
+            user: this.currentUser,
             startTime: this.sessionStartTime.toISOString(),
             endTime: new Date().toISOString(),
             movements: this.movements,
@@ -267,7 +355,10 @@ class FetalMovementTracker {
         const history = this.getHistory();
         this.historyList.innerHTML = '';
         
-        history.slice(0, 10).forEach(session => {
+        // Filter history for current user only
+        const userHistory = history.filter(session => session.user === this.currentUser);
+        
+        userHistory.slice(0, 10).forEach(session => {
             const sessionElement = document.createElement('div');
             sessionElement.className = 'history-item';
             
@@ -290,31 +381,35 @@ class FetalMovementTracker {
 
     exportToCSV() {
         const history = this.getHistory();
-        if (history.length === 0) {
+        const userHistory = history.filter(session => session.user === this.currentUser);
+        
+        if (userHistory.length === 0) {
             alert('No data to export');
             return;
         }
         
-        let csv = 'Session ID,Start Time,End Time,Duration (seconds),Total Movements,Total Episodes,Final Phase\n';
+        let csv = 'Session ID,User,Start Time,End Time,Duration (seconds),Total Movements,Total Episodes,Final Phase\n';
         
-        history.forEach(session => {
+        userHistory.forEach(session => {
             const totalMovements = session.totalMovements || 0;
             const totalEpisodes = session.totalEpisodes || totalMovements;
-            csv += `${session.id},${session.startTime},${session.endTime},${session.duration},${totalMovements},${totalEpisodes},${session.finalPhase}\n`;
+            csv += `${session.id},${session.user},${session.startTime},${session.endTime},${session.duration},${totalMovements},${totalEpisodes},${session.finalPhase}\n`;
         });
         
-        this.downloadFile(csv, 'fetal_movements.csv', 'text/csv');
+        this.downloadFile(csv, `fetal_movements_${this.currentUser}.csv`, 'text/csv');
     }
 
     exportToJSON() {
         const history = this.getHistory();
-        if (history.length === 0) {
+        const userHistory = history.filter(session => session.user === this.currentUser);
+        
+        if (userHistory.length === 0) {
             alert('No data to export');
             return;
         }
         
-        const jsonData = JSON.stringify(history, null, 2);
-        this.downloadFile(jsonData, 'fetal_movements.json', 'application/json');
+        const jsonData = JSON.stringify(userHistory, null, 2);
+        this.downloadFile(jsonData, `fetal_movements_${this.currentUser}.json`, 'application/json');
     }
 
     downloadFile(content, filename, contentType) {

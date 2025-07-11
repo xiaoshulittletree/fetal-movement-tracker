@@ -7,7 +7,7 @@
     <meta name="description" content="Track fetal movements with adaptive timing">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-192.png">
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#4682B4">
     <style>
         * {
             margin: 0;
@@ -50,6 +50,95 @@
 
         .main-content {
             padding: 30px 20px;
+        }
+
+        /* Login Screen Styles */
+        .login-screen {
+            text-align: center;
+        }
+
+        .login-form {
+            background: #f0f8ff;
+            border-radius: 15px;
+            padding: 30px 20px;
+            margin: 20px 0;
+        }
+
+        .login-form h3 {
+            color: #4682B4;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4682B4;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #4682B4;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            color: #333;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #FF69B4;
+            box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1);
+        }
+
+        .error-message {
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .welcome-message {
+            background: #f0f8ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .welcome-message h3 {
+            color: #4682B4;
+            margin-bottom: 10px;
+        }
+
+        .logout-btn {
+            background: #f0f8ff;
+            color: #4682B4;
+            border: 2px solid #4682B4;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .logout-btn:hover {
+            background: #4682B4;
+            color: white;
+        }
+
+        /* App Screen Styles */
+        .app-screen {
+            display: none;
         }
 
         .timer-section {
@@ -224,34 +313,58 @@
         </div>
 
         <div class="main-content">
-            <div class="timer-section">
-                <div class="timer" id="timer">20:00</div>
-                <div class="status" id="status">Ready to start</div>
-                <div class="movement-count" id="movementCount">Movements: 0</div>
-            </div>
-
-            <div class="controls">
-                <button class="button" id="startBtn">Start Session</button>
-                <button class="button secondary" id="recordBtn" disabled>Record Movement</button>
-                <button class="button danger" id="stopBtn" disabled>Stop Session</button>
-            </div>
-
-            <div class="session-info" id="sessionInfo" style="display: none;">
-                <h3>Current Session</h3>
-                <p id="sessionDetails"></p>
-            </div>
-
-            <div class="export-section">
-                <h3>Export Data</h3>
-                <div class="export-buttons">
-                    <button class="button secondary" id="exportCsv">Export CSV</button>
-                    <button class="button secondary" id="exportJson">Export JSON</button>
+            <!-- Login Screen -->
+            <div class="login-screen" id="loginScreen">
+                <div class="login-form">
+                    <h3>Welcome! Please enter your name</h3>
+                    <div class="error-message" id="errorMessage">
+                        Sorry, this name is not authorized to use this app.
+                    </div>
+                    <div class="input-group">
+                        <label for="username">Your Name:</label>
+                        <input type="text" id="username" placeholder="Enter your name" maxlength="50">
+                    </div>
+                    <button class="button" id="loginBtn">Start Tracking</button>
                 </div>
             </div>
 
-            <div class="history-section">
-                <h3>Recent Sessions</h3>
-                <div id="historyList"></div>
+            <!-- App Screen -->
+            <div class="app-screen" id="appScreen">
+                <div class="welcome-message">
+                    <h3>Welcome, <span id="userDisplayName"></span>! 👋</h3>
+                    <p>Ready to track your baby's movements</p>
+                    <button class="logout-btn" id="logoutBtn">Logout</button>
+                </div>
+
+                <div class="timer-section">
+                    <div class="timer" id="timer">20:00</div>
+                    <div class="status" id="status">Ready to start</div>
+                    <div class="movement-count" id="movementCount">Movements: 0</div>
+                </div>
+
+                <div class="controls">
+                    <button class="button" id="startBtn">Start Session</button>
+                    <button class="button secondary" id="recordBtn" disabled>Record Movement</button>
+                    <button class="button danger" id="stopBtn" disabled>Stop Session</button>
+                </div>
+
+                <div class="session-info" id="sessionInfo" style="display: none;">
+                    <h3>Current Session</h3>
+                    <p id="sessionDetails"></p>
+                </div>
+
+                <div class="export-section">
+                    <h3>Export Data</h3>
+                    <div class="export-buttons">
+                        <button class="button secondary" id="exportCsv">Export CSV</button>
+                        <button class="button secondary" id="exportJson">Export JSON</button>
+                    </div>
+                </div>
+
+                <div class="history-section">
+                    <h3>Recent Sessions</h3>
+                    <div id="historyList"></div>
+                </div>
             </div>
         </div>
     </div>

@@ -97,16 +97,6 @@
             box-shadow: 0 0 0 3px rgba(255, 105, 180, 0.1);
         }
 
-        .error-message {
-            color: #dc2626;
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            display: none;
-        }
-
         .welcome-message {
             background: #f0f8ff;
             border-radius: 15px;
@@ -316,13 +306,10 @@
             <!-- Login Screen -->
             <div class="login-screen" id="loginScreen">
                 <div class="login-form">
-                    <h3>Welcome! Please enter your name</h3>
-                    <div class="error-message" id="errorMessage">
-                        Sorry, this name is not authorized to use this app.
-                    </div>
+                    <h3>Welcome! Please enter your nickname</h3>
                     <div class="input-group">
-                        <label for="username">Your Name:</label>
-                        <input type="text" id="username" placeholder="Enter your name" maxlength="50">
+                        <label for="username">Your Nickname:</label>
+                        <input type="text" id="username" placeholder="Enter your nickname" maxlength="50">
                     </div>
                     <button class="button" id="loginBtn">Start Tracking</button>
                 </div>

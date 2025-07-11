@@ -1,14 +1,5 @@
 class FetalMovementTracker {
     constructor() {
-        // Authorized users as SHA-256 hashes - cannot be reversed to original usernames
-        // To add new users: hash their username with SHA-256 and add the hash here
-        this.authorizedUserHashes = [
-            'a184675d2ff83f0e0eb1e59d2e732abe124c0ee86e9a8a08befd074bca7dcef7', // xs
-            'cb6c4241a545821f65426c55dcafba973e62f3e8048d055602e7c78ac3e4d665', // ttq
-            '2100434549267ea853c6e23e048899fc2b9a9eae90c7d961feaf839a6d60e769', // poaxxs
-            '0a66bb1294be56bfbf38fff7a60b120af8f6864307f32e405d66bc1b9a35f328'  // sxx_txxx
-        ];
-        
         this.currentUser = null;
         this.isRunning = false;
         this.movements = [];
@@ -34,20 +25,7 @@ class FetalMovementTracker {
         this.checkAuthentication();
     }
 
-    // Hash function using SHA-256
-    async hashUsername(username) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(username.toLowerCase());
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
 
-    // Check if username hash is authorized
-    async isUserAuthorized(username) {
-        const userHash = await this.hashUsername(username);
-        return this.authorizedUserHashes.includes(userHash);
-    }
 
     initializeElements() {
         // Login elements
@@ -56,7 +34,6 @@ class FetalMovementTracker {
         this.usernameInput = document.getElementById('username');
         this.loginBtn = document.getElementById('loginBtn');
         this.logoutBtn = document.getElementById('logoutBtn');
-        this.errorMessage = document.getElementById('errorMessage');
         this.userDisplayName = document.getElementById('userDisplayName');
         
         // App elements
@@ -89,9 +66,9 @@ class FetalMovementTracker {
         this.exportJsonBtn.addEventListener('click', () => this.exportToJSON());
     }
 
-    async checkAuthentication() {
+    checkAuthentication() {
         const savedUser = localStorage.getItem('fetalMovementUser');
-        if (savedUser && await this.isUserAuthorized(savedUser)) {
+        if (savedUser) {
             this.currentUser = savedUser;
             this.showApp();
         } else {
@@ -99,21 +76,17 @@ class FetalMovementTracker {
         }
     }
 
-    async handleLogin() {
+    handleLogin() {
         const username = this.usernameInput.value.trim();
         if (!username) {
-            this.showError('Please enter your name');
+            alert('Please enter your nickname');
             return;
         }
 
-        if (await this.isUserAuthorized(username)) {
-            this.currentUser = username;
-            localStorage.setItem('fetalMovementUser', username);
-            this.showApp();
-            this.loadHistory();
-        } else {
-            this.showError('Sorry, this name is not authorized to use this app.');
-        }
+        this.currentUser = username;
+        localStorage.setItem('fetalMovementUser', username);
+        this.showApp();
+        this.loadHistory();
     }
 
     handleLogout() {
@@ -126,23 +99,12 @@ class FetalMovementTracker {
     showLogin() {
         this.loginScreen.style.display = 'block';
         this.appScreen.style.display = 'none';
-        this.hideError();
     }
 
     showApp() {
         this.loginScreen.style.display = 'none';
         this.appScreen.style.display = 'block';
         this.userDisplayName.textContent = this.currentUser;
-        this.hideError();
-    }
-
-    showError(message) {
-        this.errorMessage.textContent = message;
-        this.errorMessage.style.display = 'block';
-    }
-
-    hideError() {
-        this.errorMessage.style.display = 'none';
     }
 
     handleStartRecord() {

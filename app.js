@@ -191,9 +191,27 @@ class FetalMovementTracker {
                 if (state.user === this.currentUser) {
                     this.isRunning = state.isRunning;
                     this.sessionStartTime = new Date(state.sessionStartTime);
-                    this.movements = state.movements || [];
-                    this.movementEpisodes = state.movementEpisodes || [];
+                    
+                    // Convert timestamp strings back to Date objects for movements
+                    this.movements = (state.movements || []).map(movement => ({
+                        ...movement,
+                        timestamp: new Date(movement.timestamp)
+                    }));
+                    
+                    // Convert timestamp strings back to Date objects for episodes
+                    this.movementEpisodes = (state.movementEpisodes || []).map(episode => ({
+                        ...episode,
+                        startTime: new Date(episode.startTime),
+                        lastMovementTime: new Date(episode.lastMovementTime),
+                        movements: episode.movements.map(movement => ({
+                            ...movement,
+                            timestamp: new Date(movement.timestamp)
+                        }))
+                    }));
+                    
                     this.currentPhase = state.currentPhase || 'initial';
+                    
+                    console.log('Session recovery - Movements:', this.movements.length, 'Episodes:', this.movementEpisodes.length);
                     
                     if (this.isRunning) {
                         this.startRecordBtn.textContent = 'Record Movement';
@@ -206,6 +224,7 @@ class FetalMovementTracker {
                         
                         // Force update movement count display after recovery
                         setTimeout(() => {
+                            console.log('Forcing movement count update after recovery...');
                             this.updateMovementCount();
                         }, 100);
                         
@@ -292,6 +311,7 @@ class FetalMovementTracker {
         this.updateMovementEpisodes(movement);
         
         console.log('Recording movement, updating count...');
+        console.log('Current movements:', this.movements.length, 'Episodes:', this.movementEpisodes.length);
         this.updateMovementCount();
         this.updateSessionInfo();
         this.saveSessionState();
@@ -452,8 +472,11 @@ class FetalMovementTracker {
         const totalEpisodes = this.movementEpisodes.length;
         const phaseEpisodes = this.movementEpisodes.filter(e => e.phase === this.currentPhase).length;
         
+        console.log('updateMovementCount - Movements:', totalMovements, 'Episodes:', totalEpisodes, 'Phase episodes:', phaseEpisodes);
+        
         if (this.movementCountElement) {
             this.movementCountElement.textContent = `Movements: ${totalMovements} | Episodes: ${totalEpisodes} (${phaseEpisodes} in current phase)`;
+            console.log('Updated movement count display');
         } else {
             console.warn('movementCountElement not found');
         }

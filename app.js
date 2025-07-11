@@ -3,10 +3,10 @@ class FetalMovementTracker {
         // Authorized users as SHA-256 hashes - cannot be reversed to original usernames
         // To add new users: hash their username with SHA-256 and add the hash here
         this.authorizedUserHashes = [
-            'a184675d2ff83f0e0eb1e59d2e732abe124c0ee86e9a8a08befd074bca7dcef7', // xiaoshu
-            'cb6c4241a545821f65426c55dcafba973e62f3e8048d055602e7c78ac3e4d665', // tiantianquan
-            '2100434549267ea853c6e23e048899fc2b9a9eae90c7d961feaf839a6d60e769', // poaers
-            '0a66bb1294be56bfbf38fff7a60b120af8f6864307f32e405d66bc1b9a35f328'  // shu_test
+            'a184675d2ff83f0e0eb1e59d2e732abe124c0ee86e9a8a08befd074bca7dcef7', // xs
+            'cb6c4241a545821f65426c55dcafba973e62f3e8048d055602e7c78ac3e4d665', // ttq
+            '2100434549267ea853c6e23e048899fc2b9a9eae90c7d961feaf839a6d60e769', // poaxxs
+            '0a66bb1294be56bfbf38fff7a60b120af8f6864307f32e405d66bc1b9a35f328'  // sxx_txxx
         ];
         
         this.currentUser = null;

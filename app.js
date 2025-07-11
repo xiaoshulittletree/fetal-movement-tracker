@@ -2,6 +2,7 @@ class FetalMovementTracker {
     constructor() {
         this.isRunning = false;
         this.movements = [];
+        this.movementEpisodes = []; // Track individual movement episodes
         this.sessionStartTime = null;
         this.timerInterval = null;
         this.currentPhase = 'initial'; // initial, extended1, extended2
@@ -16,6 +17,7 @@ class FetalMovementTracker {
             extended2: 'Extended to 60min'
         };
         this.minMovements = 3;
+        this.clusterWindow = 3 * 60; // 3 minutes in seconds
         
         this.initializeElements();
         this.bindEvents();
@@ -48,6 +50,7 @@ class FetalMovementTracker {
         this.isRunning = true;
         this.sessionStartTime = new Date();
         this.movements = [];
+        this.movementEpisodes = [];
         this.currentPhase = 'initial';
         
         this.startBtn.disabled = true;
@@ -64,13 +67,18 @@ class FetalMovementTracker {
     recordMovement() {
         if (!this.isRunning) return;
         
+        const currentTime = new Date();
         const movement = {
-            timestamp: new Date(),
+            timestamp: currentTime,
             phase: this.currentPhase,
-            timeFromStart: Math.floor((new Date() - this.sessionStartTime) / 1000)
+            timeFromStart: Math.floor((currentTime - this.sessionStartTime) / 1000)
         };
         
         this.movements.push(movement);
+        
+        // Check if this movement should start a new episode or be part of existing one
+        this.updateMovementEpisodes(movement);
+        
         this.updateMovementCount();
         this.updateSessionInfo();
         
@@ -79,6 +87,37 @@ class FetalMovementTracker {
         setTimeout(() => {
             this.recordBtn.style.transform = 'scale(1)';
         }, 100);
+    }
+
+    updateMovementEpisodes(newMovement) {
+        const currentTime = newMovement.timestamp.getTime();
+        
+        // Check if there's a recent episode to add to
+        let addedToExisting = false;
+        
+        for (let episode of this.movementEpisodes) {
+            const lastMovementInEpisode = episode.movements[episode.movements.length - 1];
+            const timeSinceLastMovement = (currentTime - lastMovementInEpisode.timestamp.getTime()) / 1000;
+            
+            if (timeSinceLastMovement <= this.clusterWindow) {
+                // Add to existing episode
+                episode.movements.push(newMovement);
+                episode.lastMovementTime = currentTime;
+                addedToExisting = true;
+                break;
+            }
+        }
+        
+        if (!addedToExisting) {
+            // Start a new episode
+            const newEpisode = {
+                startTime: currentTime,
+                lastMovementTime: currentTime,
+                movements: [newMovement],
+                phase: this.currentPhase
+            };
+            this.movementEpisodes.push(newEpisode);
+        }
     }
 
     stopSession() {
@@ -114,9 +153,10 @@ class FetalMovementTracker {
     }
 
     checkAndExtendSession() {
-        const currentMovements = this.movements.filter(m => m.phase === this.currentPhase).length;
+        // Count episodes in current phase, not total movements
+        const currentEpisodes = this.movementEpisodes.filter(e => e.phase === this.currentPhase).length;
         
-        if (currentMovements < this.minMovements) {
+        if (currentEpisodes < this.minMovements) {
             if (this.currentPhase === 'initial') {
                 this.extendSession('extended1');
             } else if (this.currentPhase === 'extended1') {
@@ -126,7 +166,7 @@ class FetalMovementTracker {
                 this.completeSession();
             }
         } else {
-            // Enough movements, complete session
+            // Enough episodes, complete session
             this.completeSession();
         }
     }
@@ -167,8 +207,10 @@ class FetalMovementTracker {
 
     updateMovementCount() {
         const totalMovements = this.movements.length;
-        const phaseMovements = this.movements.filter(m => m.phase === this.currentPhase).length;
-        this.movementCountElement.textContent = `Movements: ${totalMovements} (${phaseMovements} in current phase)`;
+        const totalEpisodes = this.movementEpisodes.length;
+        const phaseEpisodes = this.movementEpisodes.filter(e => e.phase === this.currentPhase).length;
+        
+        this.movementCountElement.textContent = `Movements: ${totalMovements} | Episodes: ${totalEpisodes} (${phaseEpisodes} in current phase)`;
     }
 
     updateSessionInfo() {
@@ -179,13 +221,15 @@ class FetalMovementTracker {
         const seconds = elapsed % 60;
         
         const totalMovements = this.movements.length;
-        const phaseMovements = this.movements.filter(m => m.phase === this.currentPhase).length;
+        const totalEpisodes = this.movementEpisodes.length;
+        const phaseEpisodes = this.movementEpisodes.filter(e => e.phase === this.currentPhase).length;
         
         this.sessionDetails.innerHTML = `
             <strong>Duration:</strong> ${minutes}:${seconds.toString().padStart(2, '0')}<br>
             <strong>Current Phase:</strong> ${this.phaseNames[this.currentPhase]}<br>
             <strong>Total Movements:</strong> ${totalMovements}<br>
-            <strong>Movements in Current Phase:</strong> ${phaseMovements}<br>
+            <strong>Movement Episodes:</strong> ${totalEpisodes}<br>
+            <strong>Episodes in Current Phase:</strong> ${phaseEpisodes}<br>
             <strong>Started:</strong> ${this.sessionStartTime.toLocaleString()}
         `;
     }
@@ -196,7 +240,9 @@ class FetalMovementTracker {
             startTime: this.sessionStartTime.toISOString(),
             endTime: new Date().toISOString(),
             movements: this.movements,
+            movementEpisodes: this.movementEpisodes,
             totalMovements: this.movements.length,
+            totalEpisodes: this.movementEpisodes.length,
             finalPhase: this.currentPhase,
             duration: Math.floor((new Date() - this.sessionStartTime) / 1000)
         };
@@ -228,9 +274,13 @@ class FetalMovementTracker {
             const startTime = new Date(session.startTime);
             const duration = Math.floor(session.duration / 60);
             
+            // Handle both old format (without episodes) and new format
+            const totalMovements = session.totalMovements || 0;
+            const totalEpisodes = session.totalEpisodes || totalMovements; // Fallback for old data
+            
             sessionElement.innerHTML = `
                 <h4>Session ${new Date(session.startTime).toLocaleDateString()}</h4>
-                <p>Movements: ${session.totalMovements} | Duration: ${duration}min | Phase: ${this.phaseNames[session.finalPhase]}</p>
+                <p>Movements: ${totalMovements} | Episodes: ${totalEpisodes} | Duration: ${duration}min | Phase: ${this.phaseNames[session.finalPhase]}</p>
                 <p>Time: ${startTime.toLocaleTimeString()}</p>
             `;
             
@@ -245,10 +295,12 @@ class FetalMovementTracker {
             return;
         }
         
-        let csv = 'Session ID,Start Time,End Time,Duration (seconds),Total Movements,Final Phase\n';
+        let csv = 'Session ID,Start Time,End Time,Duration (seconds),Total Movements,Total Episodes,Final Phase\n';
         
         history.forEach(session => {
-            csv += `${session.id},${session.startTime},${session.endTime},${session.duration},${session.totalMovements},${session.finalPhase}\n`;
+            const totalMovements = session.totalMovements || 0;
+            const totalEpisodes = session.totalEpisodes || totalMovements;
+            csv += `${session.id},${session.startTime},${session.endTime},${session.duration},${totalMovements},${totalEpisodes},${session.finalPhase}\n`;
         });
         
         this.downloadFile(csv, 'fetal_movements.csv', 'text/csv');

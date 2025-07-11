@@ -4,7 +4,9 @@ A Progressive Web App (PWA) for tracking fetal movements with adaptive timing. P
 
 ## Features
 
-- **Adaptive Timing**: Starts with 20 minutes, extends to 40 minutes if less than 3 movements, then to 60 minutes if still insufficient
+- **Adaptive Timing**: Starts with 20 minutes, extends to 40 minutes if less than 3 movement episodes, then to 60 minutes if still insufficient
+- **Movement Clustering**: Movements within 3 minutes are grouped into episodes (individual movement periods)
+- **Episode Counting**: The 3-movement requirement is based on individual episodes, not total movements
 - **Cross-Platform**: Works on iOS Safari, WeChat browser, and Feishu browser
 - **PWA Support**: Can be installed on mobile home screens
 - **Data Export**: Export session data to CSV or JSON format
@@ -15,10 +17,11 @@ A Progressive Web App (PWA) for tracking fetal movements with adaptive timing. P
 
 1. **Start Session**: Begin a 20-minute tracking session
 2. **Record Movements**: Tap the "Record Movement" button each time you feel the baby move
-3. **Adaptive Extension**: 
-   - If less than 3 movements in 20 minutes → extends to 40 minutes
-   - If still less than 3 movements in 40 minutes → extends to 60 minutes
-4. **Export Data**: Download your tracking history as CSV or JSON files
+3. **Movement Clustering**: Movements within 3 minutes are automatically grouped into episodes
+4. **Adaptive Extension**: 
+   - If less than 3 movement episodes in 20 minutes → extends to 40 minutes
+   - If still less than 3 movement episodes in 40 minutes → extends to 60 minutes
+5. **Export Data**: Download your tracking history as CSV or JSON files
 
 ## Deployment to GitHub Pages
 
